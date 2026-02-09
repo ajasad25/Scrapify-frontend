@@ -1,8 +1,4 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
-node_modules/
-
 # Expo
 .expo/
 dist/
@@ -29,11 +25,38 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
-.env
-
 # typescript
 *.tsbuildinfo
 
 .claude/
+
+
+# compiled output
+/dist
+/node_modules
+/build
+
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+# temp directory
+.temp
+.tmp
+
+/generated/prisma
+config.bat

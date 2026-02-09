@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int               @id @default(autoincrement())
+  name            String
+  email           String            @unique
+  password        String
+  role            Role
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  isVerified      Boolean           @default(false)
+  description     String?
+  phone           String?
+  profilePicture  String?
+  Admin           Admin?
+  ChatChannel     ChatChannel[]
+  CustomerRequest CustomerRequest[]
+  Payment         Payment[]
+  Points          Points[]
+  Ragman          Ragman?
+  Rider           Rider?
+  Trash           Trash[]
+  Voucher         Voucher[]
+
+  @@map("users")
+}
+
+model verify {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+}
+
+model Trash {
+  id           String   @id
+  userId       Int
+  category     String
+  imageUrl     String
+  location     String
+  weight       String?
+  points       Int?
+  createdAt    DateTime @default(now())
+  customerRate Float?
+  status       String   @default("PENDING")
+  users        User     @relation(fields: [userId], references: [id])
+}
+
+model Admin {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  department String
+  privileges String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  users      User     @relation(fields: [userId], references: [id])
+}
+
+model Payment {
+  id        String   @id
+  userId    Int
+  amount    Int
+  status    String
+  createdAt DateTime @default(now())
+  meta      Json?
+  provider  String?
+  ragmanId  Int?
+  users     User     @relation(fields: [userId], references: [id])
+}
+
+model Ragman {
+  id                   Int                 @id @default(autoincrement())
+  userId               Int                 @unique
+  subscriptionPlan     String?
+  emailVerifyStatus    Boolean             @default(false)
+  verificationStatus   Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime
+  averageRating        Float?              @default(0)
+  completedCollections Int                 @default(0)
+  lat                  Float?
+  lng                  Float?
+  rateText             String?
+  ChatChannel          ChatChannel[]
+  CustomerRequest      CustomerRequest[]
+  users                User                @relation(fields: [userId], references: [id])
+  RagmanRequest        RagmanRequest[]
+  RagmanVerification   RagmanVerification?
+}
+
+model RagmanVerification {
+  id          Int    @id @default(autoincrement())
+  ragmanId    Int    @unique
+  cnic        String
+  ntn         String
+  phoneNumber String
+  Ragman      Ragman @relation(fields: [ragmanId], references: [id])
+}
+
+model Rider {
+  id              Int               @id @default(autoincrement())
+  userId          Int               @unique
+  licenseNo       String
+  vehicle         String
+  phone           String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime
+  isAvailable     Boolean           @default(true)
+  ChatChannel     ChatChannel[]
+  users           User              @relation(fields: [userId], references: [id])
+  RiderAssignment RiderAssignment[]
+}
+
+model Points {
+  id        String   @id
+  userId    Int
+  points    Int
+  source    String
+  trashId   String?
+  createdAt DateTime @default(now())
+  users     User     @relation(fields: [userId], references: [id])
+}
+
+model Voucher {
+  id         String    @id
+  userId     Int
+  points     Int
+  value      Int
+  code       String    @unique
+  isRedeemed Boolean   @default(false)
+  redeemedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  users      User      @relation(fields: [userId], references: [id])
+}
+
+model CustomerRequest {
+  id                  String                @id
+  userId              Int
+  location            String
+  totalWeight         String
+  totalPoints         Int                   @default(0)
+  totalValue          Float                 @default(0)
+  assignedRagmanId    Int?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime
+  status              RequestStatus         @default(PENDING)
+  chatChannelUrl      String?
+  assignedRiderId     Int?
+  Ragman              Ragman?               @relation(fields: [assignedRagmanId], references: [id])
+  users               User                  @relation(fields: [userId], references: [id])
+  CustomerRequestItem CustomerRequestItem[]
+  RagmanRequest       RagmanRequest[]
+  RiderAssignment     RiderAssignment?
+}
+
+model CustomerRequestItem {
+  id                String          @id
+  customerRequestId String
+  category          String
+  weight            String
+  points            Int             @default(0)
+  customerRate      Float           @default(0)
+  quantity          Int             @default(1)
+  imageUrl          String?
+  createdAt         DateTime        @default(now())
+  CustomerRequest   CustomerRequest @relation(fields: [customerRequestId], references: [id])
+}
+
+model RagmanRequest {
+  id                String              @id
+  ragmanId          Int
+  customerRequestId String
+  createdAt         DateTime            @default(now())
+  status            RagmanRequestStatus @default(ACCEPTED)
+  CustomerRequest   CustomerRequest     @relation(fields: [customerRequestId], references: [id])
+  Ragman            Ragman              @relation(fields: [ragmanId], references: [id])
+}
+
+model Rate {
+  id        Int      @id @default(autoincrement())
+  material  String
+  rate      Float
+  date      DateTime @default(now())
+  trend     String?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@unique([material, date])
+  @@index([date])
+  @@index([material])
+}
+
+model RiderAssignment {
+  id                String                @id
+  riderId           Int
+  customerRequestId String                @unique
+  ragmanId          Int
+  assignedAt        DateTime              @default(now())
+  updatedAt         DateTime
+  status            RiderAssignmentStatus @default(PENDING)
+  pickupStartedAt   DateTime?
+  completedAt       DateTime?
+  notes             String?
+  CustomerRequest   CustomerRequest       @relation(fields: [customerRequestId], references: [id])
+  Rider             Rider                 @relation(fields: [riderId], references: [id])
+
+  @@index([riderId])
+  @@index([status])
+}
+
+model ChatChannel {
+  id                 String   @id
+  sendbirdChannelUrl String   @unique
+  customerId         Int
+  ragmanId           Int?
+  riderId            Int?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime
+  users              User     @relation(fields: [customerId], references: [id])
+  Ragman             Ragman?  @relation(fields: [ragmanId], references: [id])
+  Rider              Rider?   @relation(fields: [riderId], references: [id])
+}
+
+enum Role {
+  CUSTOMER
+  RAGMAN
+  RIDER
+  ADMIN
+}
+
+enum RagmanRequestStatus {
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum RiderAssignmentStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}

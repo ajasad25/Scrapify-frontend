@@ -1,0 +1,449 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model users {
+  id                                                 Int                    @id @default(autoincrement())
+  name                                               String
+  email                                              String
+  password                                           String
+  role                                               Role
+  createdAt                                          DateTime               @default(now())
+  updatedAt                                          DateTime               @updatedAt
+  isVerified                                         Boolean                @default(false)
+  description                                        String?
+  phone                                              String?
+  profilePicture                                     String?
+  admin                                              Admin?                 @relation("UserToAdmin")
+  AdminPayment_AdminPayment_adminIdTousers           AdminPayment[]         @relation("AdminPayment_adminIdTousers")
+  AdminPayment_AdminPayment_approvedByTousers        AdminPayment[]         @relation("AdminPayment_approvedByTousers")
+  AdminPayment_AdminPayment_recipientIdTousers       AdminPayment[]         @relation("AdminPayment_recipientIdTousers")
+  BankAccount                                        BankAccount[]
+  customerRequests                                   CustomerRequest[]
+  FinancialTransaction                               FinancialTransaction[]
+  payments                                           Payment[]              @relation("UserToRagman")
+  points                                             Points[]
+  ragman                                             Ragman?                @relation("UserToRagman")
+  rider                                              Rider?                 @relation("UserToRider")
+  trashes                                            Trash[]
+  vouchers                                           Voucher[]
+  WalletTransaction                                  WalletTransaction[]
+  WithdrawalRequest_WithdrawalRequest_adminIdTousers WithdrawalRequest[]    @relation("WithdrawalRequest_adminIdTousers")
+  WithdrawalRequest_WithdrawalRequest_userIdTousers  WithdrawalRequest[]    @relation("WithdrawalRequest_userIdTousers")
+  chatChannels                                       chatChannel[]
+
+  @@unique([email, role])
+}
+
+model Trash {
+  id           String   @id @default(uuid())
+  userId       Int
+  category     String
+  imageUrl     String
+  location     String
+  weight       String?
+  points       Int?
+  createdAt    DateTime @default(now())
+  customerRate Float?
+  status       String   @default("PENDING")
+  user         users    @relation(fields: [userId], references: [id])
+}
+
+model Points {
+  id        String   @id @default(uuid())
+  userId    Int
+  points    Int
+  source    String
+  trashId   String?
+  createdAt DateTime @default(now())
+  user      users    @relation(fields: [userId], references: [id])
+}
+
+model Voucher {
+  id         String    @id @default(uuid())
+  userId     Int
+  points     Int
+  value      Int
+  code       String    @unique
+  isRedeemed Boolean   @default(false)
+  redeemedAt DateTime?
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
+  user       users     @relation(fields: [userId], references: [id])
+}
+
+model verify {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+
+model PasswordReset {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  otp       String
+  expiresAt DateTime
+}
+
+model Ragman {
+  id                   Int                 @id @default(autoincrement())
+  userId               Int                 @unique
+  subscriptionPlan     String?
+  emailVerifyStatus    Boolean             @default(false)
+  verificationStatus   Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  averageRating        Float?              @default(0)
+  completedCollections Int                 @default(0)
+  lat                  Float?
+  lng                  Float?
+  rateText             String?
+  assignedRequests     CustomerRequest[]
+  user                 users               @relation("UserToRagman", fields: [userId], references: [id])
+  ragmanRequests       RagmanRequest[]
+  verificationDetails  RagmanVerification?
+  chatChannels         chatChannel[]
+}
+
+model RagmanVerification {
+  id          Int    @id @default(autoincrement())
+  ragmanId    Int    @unique
+  cnic        String
+  ntn         String
+  phoneNumber String
+  ragman      Ragman @relation(fields: [ragmanId], references: [id])
+}
+
+model Rider {
+  id               Int               @id @default(autoincrement())
+  userId           Int               @unique
+  licenseNo        String
+  vehicle          String
+  phone            String
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  isAvailable      Boolean           @default(true)
+  user             users             @relation("UserToRider", fields: [userId], references: [id])
+  riderAssignments RiderAssignment[]
+  chatChannels     chatChannel[]
+}
+
+model Admin {
+  id         Int      @id @default(autoincrement())
+  userId     Int      @unique
+  department String
+  privileges String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       users    @relation("UserToAdmin", fields: [userId], references: [id])
+}
+
+model Payment {
+  id               String   @id @default(uuid())
+  userId           Int
+  amount           Int
+  status           String
+  createdAt        DateTime @default(now())
+  ragmanId         Int?
+  currency         String   @default("pkr")
+  stripePiId       String?  @unique
+  failureReason    String?
+  metadata         Json?
+  paymentMethod    String?
+  plan             String?
+  receiptUrl       String?
+  stripeCustomerId String?
+  updatedAt        DateTime @default(now())
+  user             users    @relation("UserToRagman", fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([stripePiId])
+  @@index([userId])
+}
+
+model CustomerRequest {
+  id               String                @id @default(uuid())
+  userId           Int
+  location         String
+  totalWeight      String
+  totalPoints      Int                   @default(0)
+  totalValue       Float                 @default(0)
+  assignedRagmanId Int?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  status           RequestStatus         @default(PENDING)
+  chatChannelUrl   String?
+  assignedRiderId  Int?
+  assignedRagman   Ragman?               @relation(fields: [assignedRagmanId], references: [id])
+  user             users                 @relation(fields: [userId], references: [id])
+  items            CustomerRequestItem[]
+  ragmanRequests   RagmanRequest[]
+  riderAssignment  RiderAssignment?
+}
+
+model CustomerRequestItem {
+  id                String          @id @default(uuid())
+  customerRequestId String
+  category          String
+  weight            String
+  points            Int             @default(0)
+  customerRate      Float           @default(0)
+  quantity          Int             @default(1)
+  imageUrl          String?
+  createdAt         DateTime        @default(now())
+  customerRequest   CustomerRequest @relation(fields: [customerRequestId], references: [id])
+}
+
+model RagmanRequest {
+  id                String              @id @default(uuid())
+  ragmanId          Int
+  customerRequestId String
+  createdAt         DateTime            @default(now())
+  status            RagmanRequestStatus @default(ACCEPTED)
+  customerRequest   CustomerRequest     @relation(fields: [customerRequestId], references: [id])
+  ragman            Ragman              @relation(fields: [ragmanId], references: [id])
+}
+
+model Rate {
+  id        Int      @id @default(autoincrement())
+  material  String
+  rate      Float
+  date      DateTime @default(now())
+  trend     String?
+  updatedBy Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([material, date])
+  @@index([material])
+  @@index([date])
+}
+
+model RiderAssignment {
+  id                String                @id @default(uuid())
+  riderId           Int
+  customerRequestId String                @unique
+  ragmanId          Int
+  assignedAt        DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  status            RiderAssignmentStatus @default(PENDING)
+  pickupStartedAt   DateTime?
+  completedAt       DateTime?
+  notes             String?
+  customerRequest   CustomerRequest       @relation(fields: [customerRequestId], references: [id])
+  rider             Rider                 @relation(fields: [riderId], references: [id])
+
+  @@index([riderId])
+  @@index([status])
+}
+
+model chatChannel {
+  id                 String   @id @default(uuid())
+  sendbirdChannelUrl String   @unique
+  customerId         Int
+  ragmanId           Int?
+  riderId            Int?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  customer           users    @relation(fields: [customerId], references: [id])
+  ragman             Ragman?  @relation(fields: [ragmanId], references: [id])
+  rider              Rider?   @relation(fields: [riderId], references: [id])
+}
+
+model FinancialTransaction {
+  id          String          @id
+  userId      Int
+  type        FinancialTxType
+  category    String
+  amount      Int
+  currency    String          @default("pkr")
+  status      String
+  description String
+  paymentId   String?
+  walletTxId  String?
+  voucherId   String?
+  metadata    Json?
+  createdAt   DateTime        @default(now())
+  users       users           @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([type])
+  @@index([userId])
+}
+
+model WalletTransaction {
+  id             String          @id
+  userId         Int
+  type           TransactionType
+  amount         Int
+  description    String
+  reference      String?
+  balanceAfter   Int
+  createdAt      DateTime        @default(now())
+  adminPaymentId String?
+  users          users           @relation(fields: [userId], references: [id])
+
+  @@index([createdAt])
+  @@index([userId])
+}
+
+model AdminPayment {
+  id                                    String             @id
+  adminId                               Int
+  recipientId                           Int
+  amount                                Int
+  reason                                String
+  referenceId                           String?
+  status                                AdminPaymentStatus @default(PENDING)
+  approvedBy                            Int?
+  approvedAt                            DateTime?
+  rejectionReason                       String?
+  notes                                 String?
+  createdAt                             DateTime           @default(now())
+  updatedAt                             DateTime
+  users_AdminPayment_adminIdTousers     users              @relation("AdminPayment_adminIdTousers", fields: [adminId], references: [id])
+  users_AdminPayment_approvedByTousers  users?             @relation("AdminPayment_approvedByTousers", fields: [approvedBy], references: [id])
+  users_AdminPayment_recipientIdTousers users              @relation("AdminPayment_recipientIdTousers", fields: [recipientId], references: [id])
+
+  @@index([adminId])
+  @@index([createdAt])
+  @@index([recipientId])
+  @@index([status])
+}
+
+model BankAccount {
+  id                String              @id
+  userId            Int
+  accountTitle      String
+  accountNumber     String
+  bankName          String
+  branchCode        String?
+  isVerified        Boolean             @default(false)
+  isPrimary         Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime
+  users             users               @relation(fields: [userId], references: [id])
+  WithdrawalRequest WithdrawalRequest[]
+
+  @@unique([userId, accountNumber])
+  @@index([userId])
+}
+
+model WithdrawalRequest {
+  id                                     String           @id
+  userId                                 Int
+  bankAccountId                          String
+  amount                                 Int
+  fee                                    Int              @default(0)
+  netAmount                              Int
+  status                                 WithdrawalStatus @default(PENDING)
+  requestedAt                            DateTime         @default(now())
+  processedAt                            DateTime?
+  completedAt                            DateTime?
+  rejectedAt                             DateTime?
+  adminId                                Int?
+  rejectionReason                        String?
+  transactionRef                         String?
+  notes                                  String?
+  proofImageUrl                          String?
+  createdAt                              DateTime         @default(now())
+  updatedAt                              DateTime
+  users_WithdrawalRequest_adminIdTousers users?           @relation("WithdrawalRequest_adminIdTousers", fields: [adminId], references: [id])
+  BankAccount                            BankAccount      @relation(fields: [bankAccountId], references: [id])
+  users_WithdrawalRequest_userIdTousers  users            @relation("WithdrawalRequest_userIdTousers", fields: [userId], references: [id])
+
+  @@index([requestedAt])
+  @@index([status])
+  @@index([userId])
+}
+
+model WithdrawalSettings {
+  id                   Int      @id @default(autoincrement())
+  minWithdrawalAmount  Int      @default(50000)
+  maxWithdrawalAmount  Int      @default(10000000)
+  withdrawalFeePercent Float    @default(2.0)
+  withdrawalFeeFixed   Int      @default(0)
+  processingTimeHours  Int      @default(48)
+  isEnabled            Boolean  @default(true)
+  updatedAt            DateTime
+  updatedBy            Int?
+}
+
+enum Role {
+  CUSTOMER
+  RAGMAN
+  RIDER
+  ADMIN
+}
+
+enum RequestStatus {
+  PENDING
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+  IN_PROGRESS
+}
+
+enum RagmanRequestStatus {
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum RiderAssignmentStatus {
+  PENDING
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FinancialTxType {
+  STRIPE_PAYMENT
+  VOUCHER_REDEMPTION
+  WALLET_EARNING
+  SUBSCRIPTION_UPGRADE
+  REFUND
+  ADMIN_ADJUSTMENT
+}
+
+enum TransactionType {
+  EARNED_TRASH
+  REDEEMED_VOUCHER
+  ADMIN_ADJUSTMENT
+  BONUS
+  ADMIN_PAYMENT
+  REFUND
+  WITHDRAWAL_REQUEST
+  WITHDRAWAL_FEE
+  WITHDRAWAL_REFUND
+}
+
+enum AdminPaymentStatus {
+  PENDING
+  APPROVED
+  COMPLETED
+  REJECTED
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+  FAILED
+  CANCELLED
+}

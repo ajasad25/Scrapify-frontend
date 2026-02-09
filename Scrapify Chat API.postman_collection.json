@@ -1,0 +1,191 @@
+{
+	"info": {
+		"_postman_id": "be328521-df8e-46aa-8960-3c272c6799c1",
+		"name": "Scrapify Chat API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44852260",
+		"_collection_link": "https://asadmeeran.postman.co/workspace/asad-meeran's-Workspace~5384a625-224e-48c6-87ab-e25ead15b5f6/collection/44852260-be328521-df8e-46aa-8960-3c272c6799c1?action=share&source=collection_link&creator=44852260"
+	},
+	"item": [
+		{
+			"name": "1️⃣ Initialize Chat (Create Channel)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"customerId\": 2\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/chat/initiate",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"initiate"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "2️⃣ Send Message",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"channelUrl\": \"sendbird_group_channel_url_here\",\n  \"message\": \"Hello from Ragman!\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/chat/send",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"send"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "3️⃣ Get Messages",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/chat/messages/sendbird_group_channel_url_here",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"messages",
+						"sendbird_group_channel_url_here"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "4️⃣ Get User Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/chat/token",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "5️⃣ Get User Channels",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/api/chat/channels",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"channels"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "6️⃣ Mark Channel As Read",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{token}}"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"channelUrl\": \"sendbird_group_channel_url_here\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/api/chat/mark-as-read",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"api",
+						"chat",
+						"mark-as-read"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:5000"
+		},
+		{
+			"key": "token",
+			"value": ""
+		}
+	]
+}
